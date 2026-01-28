@@ -1,0 +1,69 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: danuri-postgres
+    environment:
+      POSTGRES_DB: danuri_db
+      POSTGRES_USER: danuri
+      POSTGRES_PASSWORD: danuri_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U danuri -d danuri_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # API Server (Node.js/Feathers.js)
+  api-server:
+    build:
+      context: ..
+      dockerfile: docker/api.Dockerfile
+    container_name: danuri-api
+    environment:
+      - NODE_ENV=development
+      - DATABASE_URL=postgresql://danuri:danuri_password@postgres:5432/danuri_db
+      - JWT_SECRET=dev-jwt-secret
+      - RSA_PASSPHRASE=dev-rsa-passphrase
+    ports:
+      - "3030:3030"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ../packages/api-server:/app
+      - /app/node_modules
+
+  # Admin Server (Spring Boot)
+  admin-server:
+    build:
+      context: ..
+      dockerfile: docker/admin.Dockerfile
+    container_name: danuri-admin
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/danuri_db
+      - SPRING_DATASOURCE_USERNAME=danuri
+      - SPRING_DATASOURCE_PASSWORD=danuri_password
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  # Redis (Optional - for caching/sessions)
+  redis:
+    image: redis:7-alpine
+    container_name: danuri-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+
+volumes:
+  postgres_data:
+  redis_data:
