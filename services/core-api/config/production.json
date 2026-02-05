@@ -1,0 +1,16 @@
+{
+  "host": "0.0.0.0",
+  "port": 3030,
+  "origins": [],
+  "authentication": {
+    "jwtOptions": {
+      "expiresIn": "12h"
+    }
+  },
+  "postgres": {
+    "pool": {
+      "min": 5,
+      "max": 20
+    }
+  }
+}

@@ -1,0 +1,97 @@
+# DANURI ITSM v2.0 - Docker Compose
+# Usage: docker compose --env-file .env -f infra/docker/docker-compose.yml up -d
+# WARNING: Copy .env.example to .env and configure before running
+
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: danuri-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-danuri_itsm}
+      POSTGRES_USER: ${POSTGRES_USER:-danuri}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Database password required}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - ./data/db:/var/lib/postgresql/data
+      - ./init-scripts:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-danuri} -d ${POSTGRES_DB:-danuri_itsm}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - danuri-network
+
+  core-api:
+    build:
+      context: ../../services/core-api
+      dockerfile: Dockerfile
+    container_name: danuri-core-api
+    restart: unless-stopped
+    environment:
+      NODE_ENV: ${NODE_ENV:-production}
+      HOST: "0.0.0.0"
+      API_PORT: "3030"
+      # Database connection via service name (Docker internal network)
+      DATABASE_URL: postgres://${POSTGRES_USER:-danuri}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-danuri_itsm}
+      JWT_SECRET: ${JWT_SECRET:?JWT secret required}
+      CORS_ORIGINS: '["http://localhost:3000","http://localhost:8080","http://user-portal:3000","http://admin-console:8080"]'
+    ports:
+      - "${API_PORT:-3030}:3030"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - danuri-network
+
+  user-portal:
+    build:
+      context: ../../apps/user-portal
+      dockerfile: Dockerfile
+      args:
+        # Client-side API URL (browser access via exposed port)
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:3030}
+    container_name: danuri-user-portal
+    restart: unless-stopped
+    environment:
+      NODE_ENV: ${NODE_ENV:-production}
+      # Server-side API URL (SSR/API routes via Docker network)
+      API_URL_INTERNAL: http://core-api:3030
+    ports:
+      - "${USER_PORTAL_PORT:-3000}:3000"
+    depends_on:
+      - core-api
+    networks:
+      - danuri-network
+
+  admin-console:
+    build:
+      context: ../../apps/admin-console
+      dockerfile: Dockerfile
+    container_name: danuri-admin-console
+    restart: unless-stopped
+    environment:
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-prod}
+      # Database via Docker network (service name)
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-danuri_itsm}
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-danuri}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
+      # Core API via Docker network (service name)
+      CORE_API_URL: http://core-api:3030
+    ports:
+      - "${ADMIN_CONSOLE_PORT:-8080}:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      core-api:
+        condition: service_started
+    networks:
+      - danuri-network
+
+networks:
+  danuri-network:
+    driver: bridge

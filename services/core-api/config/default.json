@@ -1,0 +1,47 @@
+{
+  "host": "0.0.0.0",
+  "port": 3030,
+  "public": "../public",
+  "origins": ["http://localhost:3000", "http://localhost:8080"],
+  "paginate": {
+    "default": 10,
+    "max": 100
+  },
+  "authentication": {
+    "entity": "user",
+    "service": "users",
+    "secret": "CHANGE_ME_IN_PRODUCTION",
+    "authStrategies": ["jwt", "local"],
+    "jwtOptions": {
+      "header": {
+        "typ": "access"
+      },
+      "audience": "https://danuri.go.kr",
+      "issuer": "danuri-itsm",
+      "algorithm": "HS256",
+      "expiresIn": "1d"
+    },
+    "local": {
+      "usernameField": "email",
+      "passwordField": "password"
+    }
+  },
+  "postgres": {
+    "client": "pg",
+    "connection": {
+      "host": "localhost",
+      "port": 5432,
+      "user": "danuri",
+      "password": "",
+      "database": "danuri_itsm"
+    },
+    "pool": {
+      "min": 2,
+      "max": 10
+    },
+    "migrations": {
+      "tableName": "knex_migrations",
+      "directory": "./migrations"
+    }
+  }
+}

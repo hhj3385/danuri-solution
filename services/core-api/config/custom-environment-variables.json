@@ -1,0 +1,14 @@
+{
+  "host": "HOST",
+  "port": "API_PORT",
+  "origins": {
+    "__name": "CORS_ORIGINS",
+    "__format": "json"
+  },
+  "authentication": {
+    "secret": "JWT_SECRET"
+  },
+  "postgres": {
+    "connection": "DATABASE_URL"
+  }
+}

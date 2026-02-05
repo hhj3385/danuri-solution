@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(ls -la \"C:\\\\danuri-solution\\\\infra\\\\docker\"\" 2>/dev/null || echo \"Directory empty or new \")"
+    ]
+  }
+}

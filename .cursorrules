@@ -1,0 +1,120 @@
+# DANURI ITSM Platform v2.0 - Development Rules
+
+## 0. Project Identity
+- **Name**: DANURI (다누리) ITSM
+- **Type**: On-Premise Independent Portal (Non-SaaS, Non-Widget)
+- **Core Value**:
+  1. **Security First**: 100% On-Premise, No external script dependencies, Strict network isolation compatible.
+  2. **Hybrid Modernity**: Next.js (User UX) + eGovFrame (Admin Standard) + Node.js (Core Engine).
+  3. **Process Integrity**: Follow PDAC (Plan-Design-Analyze-Construct) strictly.
+
+---
+
+## 1. Architecture & Tech Stack
+
+### 1.1 Frontend A: User Portal (사용자용)
+- **Tech**: Next.js 14+ (App Router), React, Tailwind CSS.
+- **Role**: General user SR registration, history tracking, feedback.
+- **Auth**: JWT (stored in httpOnly cookie), Email-based identity (mapped to internal UUID).
+- **Key Feature**: Clean UI, Drag-drop file upload, Real-time status updates.
+
+### 1.2 Frontend B: Admin Console (관리자용)
+- **Tech**: eGovFrame 4.2 (Spring Boot 2.7 based), Thymeleaf (Server-side Rendering).
+- **Role**: Ticket management, SLA monitoring, Statistics, System config.
+- **Auth**: Admin-specific session/JWT.
+- **Key Feature**: High-density grid view, Excel export, Audit log viewing.
+
+### 1.3 Backend: Core Engine (API 서버)
+- **Tech**: Node.js 20 (LTS), Feathers.js 5.x (TypeScript preferred).
+- **Role**: Central API gateway, Socket.io (Real-time), File IO, Business Logic.
+- **Security**: TLS 1.3 enforcement (in prod), Input sanitization (XSS/SQLi).
+
+### 1.4 Database
+- **Tech**: PostgreSQL 15+.
+- **Schema**: See `Section 5. Database Schema` below.
+- **Design**: Multi-tenant ready (site_id), JSONB for audit logs.
+
+### 1.5 Infrastructure
+- **Container**: Docker Compose (Dev), Kubernetes compatible (Prod).
+- **Gateway**: Nginx (Reverse Proxy for port hiding).
+
+---
+
+## 2. Directory Structure (Monorepo Style)
+
+```text
+danuri-itsm/
+├── apps/
+│   ├── user-portal/      # Next.js Project
+│   └── admin-console/    # Spring Boot Project (eGov)
+├── services/
+│   └── core-api/         # Node.js Feathers Project
+├── infra/
+│   ├── docker/           # Docker Compose & Configs
+│   └── scripts/          # Deploy/Init scripts
+├── docs/                 # Functional Specs, ERD
+├── CLAUDE.md             # This Rule File
+└── README.md
+```
+
+---
+
+## 3. Coding Conventions (Strict)
+
+### 3.1 Naming
+- **Variables/Functions**: camelCase (e.g., createTicket)
+- **Classes/Components**: PascalCase (e.g., TicketService, UserCard)
+- **Database**: snake_case (e.g., ticket_id, created_at)
+- **Files**:
+  - JS/TS: kebab-case or camelCase (consistent within module).
+  - Java: PascalCase.
+
+### 3.2 Security Rules (DO NOT BREAK)
+- **No Hardcoding**: Credentials MUST be in .env. Use Jasypt for Java properties.
+- **No External Scripts**: Do NOT use CDN links (e.g., Google Fonts, FontAwesome CDN) in HTML. Assets must be local (npm or static file).
+- **SSL**: NODE_TLS_REJECT_UNAUTHORIZED=0 is FORBIDDEN in Production config.
+
+### 3.3 Git / Version Control
+- **Commit Message**: type: subject (e.g., feat: add ticket creation api, fix: resolve login timeout)
+- **Types**: feat, fix, docs, style, refactor, test, chore.
+
+---
+
+## 4. Functional Requirements (Summary)
+
+### 4.1 Authentication
+- **User**: Sign up with (Email, Name, PW). Auto-assign UUID.
+- **Admin**: Created via Seed (Env) or Super Admin. Requires PENDING -> ACTIVE approval flow.
+- **Token**: Access Token (Short-lived), Refresh Token (HttpOnly Cookie).
+
+### 4.2 Service Request (SR) Lifecycle
+- **Status Flow**: RECEIVED -> PROCESSING (Require Assignee) -> COMPLETED (Require Resolution) / ON_HOLD / CANCELLED.
+- **History**: Auto-save changes to tb_ticket_history in JSONB format.
+  - `{ "field": "status", "old": "RECEIVED", "new": "PROCESSING" }`
+
+### 4.3 Notification
+- **Channel**: In-App Notification (Socket.io) is primary. Email (SMTP) is secondary/optional for MVP.
+- **Persistence**: Save to tb_notifications for later viewing.
+
+---
+
+## 5. Database Schema (Reference)
+
+Note: This is the Source of Truth. Do not alter without approval.
+
+- **tb_sites**: site_id, site_name (Multi-tenant root)
+- **tb_users**: user_id, email, password_hash, role_level (USER/TENANT_ADMIN/SUPER_ADMIN), account_status
+- **tb_tickets**: ticket_id, ticket_no, title, description, status, priority, requester_id, assignee_id
+- **tb_ticket_history**: history_id, ticket_id, action_type, changes (JSONB), memo
+- **tb_files**: file_id, target_id, file_path (Physical path, not URL)
+- **tb_common_codes**: code_group, code_value, code_name
+- **tb_notifications**: noti_id, user_id, message, is_read
+
+---
+
+## 6. AI Agent Guidelines (For Claude & Cursor)
+
+- **PDAC First**: Before writing code, verify which phase (Plan/Design/Analyze/Construct) we are in.
+- **Context Awareness**: Always check apps/ or services/ context. Do not mix Java and Node.js logic.
+- **Refactoring**: If you see "Hardcoded Values" or "Magic Numbers", suggest moving them to Constants or Common Codes immediately.
+- **Error Handling**: Always implement try-catch blocks and standard error responses (e.g., `{ success: false, message: "..." }`).

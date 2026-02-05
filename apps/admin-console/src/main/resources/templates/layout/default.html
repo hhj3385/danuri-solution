@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${title} ?: 'DANURI Admin'">DANURI Admin</title>
+    <link rel="stylesheet" th:href="@{/css/bootstrap.min.css}">
+</head>
+<body>
+    <nav class="navbar navbar-dark bg-dark">
+        <div class="container-fluid">
+            <span class="navbar-brand">DANURI ITSM Admin</span>
+            <form th:action="@{/logout}" method="post" class="d-flex">
+                <button class="btn btn-outline-light btn-sm" type="submit">로그아웃</button>
+            </form>
+        </div>
+    </nav>
+    <main class="container mt-4">
+        <div layout:fragment="content"></div>
+    </main>
+    <script th:src="@{/js/bootstrap.bundle.min.js}"></script>
+</body>
+</html>

@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>로그인 - DANURI Admin</title>
+    <link rel="stylesheet" th:href="@{/css/bootstrap.min.css}">
+</head>
+<body class="bg-light">
+    <div class="container min-vh-100 d-flex align-items-center justify-content-center">
+        <div class="card shadow" style="width: 22rem;">
+            <div class="card-body p-4">
+                <h5 class="card-title mb-4">DANURI ITSM Admin</h5>
+                <form th:action="@{/login}" method="post">
+                    <div class="mb-3">
+                        <label class="form-label">아이디</label>
+                        <input type="text" name="username" class="form-control" required autofocus>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">비밀번호</label>
+                        <input type="password" name="password" class="form-control" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100">로그인</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

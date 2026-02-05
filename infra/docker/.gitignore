@@ -1,0 +1,11 @@
+# Environment files (NEVER commit secrets)
+.env
+.env.local
+.env.*.local
+
+# Database data (local development only)
+data/
+
+# Init scripts with secrets
+init-scripts/*.sql
+!init-scripts/.gitkeep
